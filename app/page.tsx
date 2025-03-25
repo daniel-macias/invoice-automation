@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ClipLoader } from 'react-spinners';
 
 interface InvoiceData {
   invoice_number: string;
@@ -56,6 +57,14 @@ export default function Home() {
     setFile(selectedFile);
   };
 
+    // Function to simulate saving data to a database
+  const handleSaveToDatabase = () => {
+    if (invoiceData) {
+      console.log("Saving data to database:", invoiceData);
+    }
+  };
+
+
   // Handle file upload (to be connected to n8n)
   const handleUpload = async () => {
     if (!file) return;
@@ -91,10 +100,11 @@ export default function Home() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-gray-800">
+      <h1 className="text-3xl font-semibold mb-2">Invoice Automator</h1>
       <div className="bg-white shadow-lg rounded-2xl p-6 max-w-md w-full text-center">
-        <h1 className="text-2xl font-semibold mb-2">Upload Your File</h1>
+        <h2 className="text-2xl font-semibold mb-2">Upload Your File</h2>
         <p className="text-gray-600 mb-4">Select a PDF or image invoice to process.</p>
-
+        
         {/* File Upload Button */}
         <label className="w-full border-2 border-dashed border-gray-400 rounded-lg px-4 py-3 cursor-pointer bg-transparent hover:bg-gray-50 transition inline-block">
           <input type="file" className="hidden" onChange={handleFileChange} />
@@ -102,6 +112,8 @@ export default function Home() {
             {file ? `Selected: ${file.name}` : "Click to upload or drag & drop"}
           </span>
         </label>
+
+        {isUploading && (<ClipLoader className="mt-5" color="#3498db" loading={true} size={50} />)}
 
         {/* Error Message */}
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
@@ -121,7 +133,7 @@ export default function Home() {
 
         {/* Display Invoice Data if available */}
         {invoiceData && (
-          <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="mt-6 border rounded-lg p-4 bg-gray-50">
             {/* Invoice Number */}
             <div className="mb-4 text-center">
               <p className="text-xl font-bold">Invoice # {invoiceData.invoice_number}</p>
@@ -179,7 +191,9 @@ export default function Home() {
                     </tr>
                   </tbody>
                 </table>
+                
               </>
+              
             )}
 
             {/* Action Buttons */}
@@ -211,9 +225,20 @@ export default function Home() {
                 </button>
               )}
             </div>
+            
           </div>
+          
         )}
       </div>
+      {/* Save to Database Button */}
+      {invoiceData && (
+        <button
+          className="mt-6 p-2 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition"
+          onClick={handleSaveToDatabase}
+        >
+          Save to Database
+        </button>
+      )}
     </main>
   );
 }
