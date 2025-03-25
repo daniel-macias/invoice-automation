@@ -1,13 +1,36 @@
 "use client";
 import { useState } from "react";
 
+interface InvoiceData {
+  invoice_number: string;
+  item_name: string;
+  item_description: string;
+  quantity: number;
+  invoice_date: string;
+  unit_price: number;
+  subtotal_amount: number;
+  tax: number;
+  total_amount: number;
+}
+
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState<InvoiceData | null>(null);
 
-  const WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK || "";
+  const handleEditChange = (field: keyof InvoiceData, value: string | number) => {
+    setEditedData((prev) => {
+      if (!prev) return null;
+  
+      const updated = { ...prev, [field]: value };
+  
+      return updated;
+    });
+  };
 
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,16 +74,16 @@ export default function Home() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Success: ${data.message}`);
+        setInvoiceData(data.output);
+        setEditedData(data.output);
       } else {
-        alert(`Error: ${data.error || "Unknown error"}`);
+        setError("Failed to upload the file");
       }
 
+
       console.log("Upload response:", data);
-      alert("File uploaded successfully!");
     } catch (error) {
       console.error("Upload failed", error);
-      alert("Error uploading file");
     } finally {
       setIsUploading(false);
     }
@@ -95,6 +118,101 @@ export default function Home() {
         >
           {isUploading ? "Uploading..." : "Send File"}
         </button>
+
+        {/* Display Invoice Data if available */}
+        {invoiceData && (
+          <div className="border rounded-lg p-4 bg-gray-50">
+            {/* Invoice Number */}
+            <div className="mb-4 text-center">
+              <p className="text-xl font-bold">Invoice # {invoiceData.invoice_number}</p>
+              <p className="text-gray-500">Date: {invoiceData.invoice_date}</p>
+            </div>
+
+            {/* Editable Fields */}
+            {isEditing ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Object.keys(invoiceData).map((key) => (
+                  
+                    <div key={key}>
+                      <label className="block text-sm font-semibold text-gray-600">
+                        {key.replace(/_/g, " ").toUpperCase()}
+                      </label>
+                      <input
+                        type={typeof invoiceData[key as keyof InvoiceData] === "number" ? "number" : "text"}
+                        className="w-full p-2 border rounded-lg mt-1"
+                        value={editedData ? editedData[key as keyof InvoiceData] : ""}
+                        onChange={(e) =>
+                          handleEditChange(key as keyof InvoiceData, e.target.value)
+                        }
+                      />
+                    </div>
+                  
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* Item Details */}
+                <div className="border-b pb-4 mb-4">
+                  <p className="text-lg font-semibold">{invoiceData.item_name}</p>
+                  <p className="text-gray-600">{invoiceData.item_description}</p>
+                  <p className="text-gray-700 mt-2">Quantity: <span className="font-semibold">{invoiceData.quantity}</span></p>
+                </div>
+
+                {/* Pricing Table */}
+                <table className="w-full text-sm">
+                  <tbody>
+                    <tr>
+                      <td className="text-gray-600">Unit Price:</td>
+                      <td className="text-right font-medium">${invoiceData.unit_price}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-gray-600">Subtotal:</td>
+                      <td className="text-right font-medium">${invoiceData.subtotal_amount}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-gray-600">Tax:</td>
+                      <td className="text-right font-medium">${invoiceData.tax}</td>
+                    </tr>
+                    <tr className="border-t">
+                      <td className="text-lg font-bold">Total:</td>
+                      <td className="text-right text-lg font-bold text-green-600">${invoiceData.total_amount}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* Action Buttons */}
+            <div className="mt-4 flex justify-between">
+              {isEditing ? (
+                <>
+                  <button
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                    onClick={() => {
+                      setInvoiceData(editedData);
+                      setIsEditing(false);
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="w-full py-2 rounded-lg text-white bg-yellow-500 hover:bg-yellow-600"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
