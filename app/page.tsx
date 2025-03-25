@@ -5,6 +5,9 @@ export default function Home() {
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+
+  const WEBHOOK_URL = process.env.NEXT_PUBLIC_N8N_WEBHOOK || "";
 
   // Handle file selection
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,9 +34,36 @@ export default function Home() {
   };
 
   // Handle file upload (to be connected to n8n)
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!file) return;
-    console.log("Uploading:", file.name);
+  
+    const formData = new FormData();
+    formData.append("file", file);
+  
+    setIsUploading(true);
+  
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`Success: ${data.message}`);
+      } else {
+        alert(`Error: ${data.error || "Unknown error"}`);
+      }
+
+      console.log("Upload response:", data);
+      alert("File uploaded successfully!");
+    } catch (error) {
+      console.error("Upload failed", error);
+      alert("Error uploading file");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -55,13 +85,15 @@ export default function Home() {
 
         {/* Send File Button */}
         <button
-          onClick={handleUpload}
-          disabled={!file}
-          className={`w-full mt-4 py-2 rounded-lg text-white font-medium transition ${
-            file ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 cursor-not-allowed"
+          className={`mt-4 w-full py-2 rounded-lg text-white font-semibold transition ${
+            file && !error
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-gray-400 cursor-not-allowed"
           }`}
+          onClick={handleUpload}
+          disabled={!file || !!error || isUploading}
         >
-          Send File
+          {isUploading ? "Uploading..." : "Send File"}
         </button>
       </div>
     </main>
