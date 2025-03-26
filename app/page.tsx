@@ -12,6 +12,7 @@ interface InvoiceData {
   subtotal_amount: number;
   tax: number;
   total_amount: number;
+  discount: number;
 }
 
 export default function Home() {
@@ -22,6 +23,8 @@ export default function Home() {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<InvoiceData | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const handleEditChange = (field: keyof InvoiceData, value: string | number) => {
     setEditedData((prev) => {
@@ -58,11 +61,30 @@ export default function Home() {
   };
 
     // Function to simulate saving data to a database
-  const handleSaveToDatabase = () => {
-    if (invoiceData) {
-      console.log("Saving data to database:", invoiceData);
-    }
-  };
+    const handleSaveToDatabase = async () => {
+      if (!editedData) return;
+
+      setIsSaving(true);
+    
+      try {
+        const response = await fetch("/api/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editedData),
+        });
+    
+        const result = await response.json();
+        console.log("Save response:", result);
+        setSaveMessage("Saved successfully!");
+      } catch (error) {
+        console.error("Error saving data:", error);
+        setSaveMessage("Failed to save data.");
+      }finally {
+        setIsSaving(false); 
+      }
+    };
 
 
   // Handle file upload (to be connected to n8n)
@@ -232,13 +254,20 @@ export default function Home() {
       </div>
       {/* Save to Database Button */}
       {invoiceData && (
+        
         <button
           className="mt-6 p-2 rounded-lg text-white font-semibold bg-green-600 hover:bg-green-700 transition"
           onClick={handleSaveToDatabase}
+          disabled={isSaving}
         >
-          Save to Database
+          {isSaving ? "Saving..." : "Save to Database"}
+          
         </button>
+        
       )}
+      {isSaving && <ClipLoader className="mt-3" color="#28a745" loading={true} size={40} />}
+      {/* Success Message */}
+      {saveMessage && <p className="mt-3 text-green-600">{saveMessage}</p>}
     </main>
   );
 }
