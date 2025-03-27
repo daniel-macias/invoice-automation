@@ -13,6 +13,7 @@ interface InvoiceData {
   tax: number;
   total_amount: number;
   discount: number;
+  id: string;
 }
 
 export default function Home() {
@@ -103,16 +104,22 @@ export default function Home() {
       });
   
       const data = await response.json();
-
+  
       if (response.ok) {
-        setInvoiceData(data.output);
-        setEditedData(data.output);
+        // Assuming 'data' includes the invoice information from n8n
+        const invoiceDataWithId = {
+          ...data.output,
+          id: data.id, // Include the id from the response
+        };
+  
+        setInvoiceData(invoiceDataWithId);
+        setEditedData(invoiceDataWithId);
+  
+        console.log("Upload response:", invoiceDataWithId);
       } else {
         setError("Failed to upload the file");
       }
-
-
-      console.log("Upload response:", data);
+  
     } catch (error) {
       console.error("Upload failed", error);
     } finally {
